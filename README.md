@@ -200,3 +200,56 @@ Change these values to modify the behavior when running with no arguments:
 - Deactivate venv: deactivate
 - Remove venv folder if you created one: delete the .venv directory
 - Remove installed package(s) from the venv if desired: pip uninstall pyautogui
+
+
+## Executables in build/ and dist (how to find and use them)
+When you build this project with PyInstaller, two folders are involved:
+
+- build/
+  - Temporary/intermediate files produced during the build. Useful for debugging, but you don’t distribute anything from here.
+  - You can safely delete this folder; PyInstaller will recreate it next time.
+
+- dist/
+  - Final, ready‑to‑run executables. This is the folder you’ll share with others.
+
+What you’ll typically see after running the packaging commands in the section above:
+
+- Windows (after building with the commands shown):
+  - dist/WorkFlowCLI.exe — Console executable for the CLI script (`work_flow.py`).
+  - dist/WorkKeeper.exe — GUI executable for the Tkinter app (`app_gui.py`).
+
+- macOS (example artifacts already present in this repo):
+  - dist/WorkFlowCLI — Console executable (no .exe suffix on macOS/Linux).
+  - dist/WorkKeeper — GUI binary, and also a full app bundle:
+  - dist/WorkKeeper.app — Standard macOS app bundle (double‑click to launch).
+
+Notes about run/launch methods by platform:
+- Windows
+  - Double‑click `dist\WorkKeeper.exe` to open the GUI.
+  - Or, from PowerShell/Command Prompt in the project root:
+    - `.\\dist\\WorkKeeper.exe`
+    - `.\\dist\\WorkFlowCLI.exe --mode print --duration 10 --interval 2`
+
+- macOS
+  - GUI: double‑click `dist/WorkKeeper.app`. If Gatekeeper warns that the app is from an unidentified developer, you can:
+    - Right‑click the app > Open, then confirm, or
+    - Run: `xattr -r -d com.apple.quarantine "dist/WorkKeeper.app"` once to remove the quarantine attribute.
+  - CLI/GUI from Terminal:
+    - `./dist/WorkFlowCLI --mode print --duration 10 --interval 2`
+    - `./dist/WorkKeeper`
+
+- Linux (if you build there):
+  - Executables will be similar to macOS (no `.exe` suffix). Example:
+    - `./dist/WorkFlowCLI`
+
+One‑file vs one‑folder (for reference):
+- The examples here use `--onefile`, which produces a single executable in `dist/` (recommended for distribution).
+- If you build without `--onefile` (a “one‑folder” build), PyInstaller creates a subfolder under `dist/` (e.g., `dist/WorkFlowCLI/`) that contains the executable plus supporting files. In that case, run the executable inside that subfolder.
+
+Building from .spec files (optional):
+- This repo includes `WorkFlowCLI.spec` and `WorkKeeper.spec`. You can reproduce the same builds by running:
+  - `pyinstaller WorkFlowCLI.spec`
+  - `pyinstaller WorkKeeper.spec`
+
+Cleaning up:
+- To remove previous build outputs, delete the `build/` and `dist/` folders and rebuild.
