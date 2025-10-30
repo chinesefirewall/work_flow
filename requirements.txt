@@ -1,0 +1,5 @@
+# Minimal requirement for actual typing/key pressing support
+# If this is not installed, the script will fall back to printing what it would do.
+pyautogui>=0.9.54
+# On macOS, pyobjc enables some GUI integrations required by pyautogui
+pyobjc; platform_system == "Darwin"
