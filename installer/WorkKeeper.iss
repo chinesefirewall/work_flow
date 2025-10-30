@@ -10,10 +10,9 @@
 
 ; IMPORTANT: Generate your own GUID once and never change it (keeps upgrades smooth)
 ; In Inno Setup: Tools -> Generate GUID -> paste below WITHOUT braces for Option A:
-#define MyAppId "7F2A8D4A-9E64-4B10-9C8C-0F5E19A8C0AB"
 
 [Setup]
-AppId={{#MyAppId}}
+AppId={{7F2A8D4A-9E64-4B10-9C8C-0F5E19A8C0AB}}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
