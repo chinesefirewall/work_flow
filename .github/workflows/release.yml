@@ -1,0 +1,82 @@
+name: build-and-release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"   # push a tag like v1.0.0 to trigger
+
+permissions:
+  contents: write   # needed to upload to Releases with GITHUB_TOKEN
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    env:
+      PYTHON_VERSION: "3.11"
+      APP_VERSION: "${{ github.ref_name }}"  # e.g. v1.2.3
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install build deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pyinstaller
+
+      - name: Build GUI EXE with PyInstaller
+        run: |
+          pyinstaller --onefile --windowed --name WorkKeeper app_gui.py
+        shell: pwsh
+
+      - name: Verify EXE exists
+        run: |
+          if (!(Test-Path dist\WorkKeeper.exe)) { throw "EXE not found" }
+        shell: pwsh
+
+      - name: Install Inno Setup (via Chocolatey)
+        run: choco install innosetup --no-progress -y
+        shell: pwsh
+
+      - name: Build Installer with Inno Setup
+        env:
+          APP_VERSION: ${{ env.APP_VERSION }}
+        run: |
+          if (!(Test-Path installer\output)) { New-Item -ItemType Directory installer\output | Out-Null }
+          # Strip leading 'v' from tag (e.g., v1.2.3 -> 1.2.3)
+          $ver = $env:APP_VERSION -replace '^v',''
+          iscc.exe /DAPP_VERSION="$ver" installer\WorkKeeper.iss
+        shell: pwsh
+
+      - name: Show outputs
+        run: |
+          Write-Host "=== dist ==="
+          dir dist
+          Write-Host "=== installer\\output ==="
+          dir installer\output
+        shell: pwsh
+
+      - name: Upload artifacts to Actions
+        uses: actions/upload-artifact@v4
+        with:
+          name: WorkKeeper-${{ env.APP_VERSION }}
+          path: |
+            dist/WorkKeeper.exe
+            installer/output/*.exe
+
+      - name: Create GitHub Release and upload assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.APP_VERSION }}
+          name: "WorkKeeper ${{ env.APP_VERSION }}"
+          draft: false
+          prerelease: false
+          files: |
+            dist/WorkKeeper.exe
+            installer/output/*.exe
