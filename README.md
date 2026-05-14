@@ -140,6 +140,99 @@ Run commands from the project root (this folder).
 - Keyboard layout matters (e.g., different behavior on non‑US layouts). Adjust your message/keys accordingly.
 - High DPI/scaling or multi‑monitor setups generally don’t affect key presses, but keep the app visible and focused.
 
+## Browser Flow — Automated URL Task Runner
+
+WorkKeeper now includes a **Browser Flow** feature that opens a list of URLs in Chrome and runs a configured task on each page automatically.
+
+### Quick start (Browser Flow)
+
+1) Install the new dependencies:
+   `pip install -r requirements.txt`
+
+2) Edit `urls_config.json` with your URLs and tasks (see below for available tasks).
+
+3) Run from the command line:
+   `python browser_flow.py --config urls_config.json`
+
+   Or use the GUI — open the **Browser Flow** tab:
+   `python app_gui.py`
+
+### urls_config.json format
+
+```json
+{
+  "browser": "chrome",
+  "headless": false,
+  "delay_between_sites": 5,
+  "page_load_wait": 3,
+  "max_retries": 2,
+  "chrome_profile_path": "",
+  "chrome_profile_name": "Default",
+  "sites": [
+    {
+      "url": "https://www.google.com",
+      "task": "screenshot",
+      "params": { "output": "screenshots/google.png" }
+    },
+    {
+      "url": "https://example.com/login",
+      "task": "fill_form",
+      "params": {
+        "fields": { "#username": "myuser", "#password": "mypass" },
+        "submit_selector": "button[type=submit]"
+      }
+    }
+  ],
+  "repeat": {
+    "enabled": false,
+    "count": 1,
+    "delay_between_cycles": 60
+  }
+}
+```
+
+Config fields:
+- **headless**: run Chrome without a visible window (true/false)
+- **delay_between_sites**: seconds to wait between each URL
+- **page_load_wait**: seconds to wait after opening a page before running the task
+- **max_retries**: number of retry attempts per task on failure (with exponential backoff)
+- **chrome_profile_path**: path to a Chrome user data directory to reuse logins (leave empty for a fresh profile). Windows example: `C:/Users/YourName/AppData/Local/Google/Chrome/User Data`
+- **chrome_profile_name**: profile folder name inside the user data dir (default: `Default`)
+- **repeat**: enable cycling through the URL list multiple times with a delay between cycles
+
+### Available browser tasks (defined in browser_tasks.py)
+
+| Task name        | Description                                      | Key params                                    |
+|-----------------|--------------------------------------------------|-----------------------------------------------|
+| screenshot       | Save a screenshot of the page                    | output (file path)                            |
+| check_email      | Wait for Gmail inbox to load                     | timeout                                       |
+| type_in_cell     | Type into a Google Sheets formula bar            | text (supports {timestamp})                   |
+| click_element    | Click an element by CSS selector                 | selector, timeout                             |
+| fill_form        | Fill multiple form fields and optionally submit  | fields (selector→value map), submit_selector  |
+| wait_and_scroll  | Scroll to page bottom (for lazy-loaded content)  | pause, scrolls                                |
+| navigate_back    | Go back in browser history                       | —                                             |
+| refresh_page     | Refresh the current page                         | —                                             |
+| run_javascript   | Execute custom JavaScript                        | script                                        |
+| wait_for_element | Wait for an element to appear                    | selector, timeout                             |
+| type_text        | Type into any input element by CSS selector      | selector, text, clear, press_enter, timeout   |
+
+You can add your own tasks by defining a function in `browser_tasks.py` with the signature `def my_task(driver, params: dict) -> None`.
+
+### Browser Flow CLI options
+
+- `python browser_flow.py --config urls_config.json` — run with a config file
+- `python browser_flow.py --headless` — force headless mode (overrides config)
+- `python browser_flow.py --log-file browser.log` — enable file logging with rotation
+
+### Chrome profile tip (Windows)
+
+To avoid logging in every time, set `chrome_profile_path` in your config to your Chrome user data directory. On Windows this is typically:
+```
+C:/Users/YourName/AppData/Local/Google/Chrome/User Data
+```
+**Important:** Close all Chrome windows before running browser_flow with a profile path, or Chrome will refuse to start a second instance using the same profile.
+
+
 ## Efficiency notes
 - The main loop uses a fixed‑cadence scheduler (`next_fire`) to reduce drift over long runs.
 - It uses a short sleep and, when available, `threading.Event.wait()` to remain responsive to Stop without busy‑waiting.

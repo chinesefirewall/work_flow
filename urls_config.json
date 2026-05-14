@@ -1,0 +1,30 @@
+{
+  "browser": "chrome",
+  "headless": false,
+  "delay_between_sites": 5,
+  "page_load_wait": 3,
+  "max_retries": 2,
+  "chrome_profile_path": "",
+  "chrome_profile_name": "Default",
+  "sites": [
+    {
+      "url": "https://www.google.com",
+      "task": "screenshot",
+      "params": {
+        "output": "screenshots/google.png"
+      }
+    },
+    {
+      "url": "https://www.github.com",
+      "task": "screenshot",
+      "params": {
+        "output": "screenshots/github.png"
+      }
+    }
+  ],
+  "repeat": {
+    "enabled": false,
+    "count": 1,
+    "delay_between_cycles": 60
+  }
+}
