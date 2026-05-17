@@ -163,12 +163,20 @@ def run_browser_flow(
     cycles = repeat.get("count", 1) if repeat.get("enabled", False) else 1
     cycle_delay = repeat.get("delay_between_cycles", 60)
     sites = config.get("sites", [])
+    total_duration_minutes = config.get("total_duration_minutes", 0)
+    total_duration_seconds = total_duration_minutes * 60 if total_duration_minutes else 0
+    flow_start_time = time.time()
 
     if not sites:
         logger.warning("No sites configured — nothing to do.")
         return 0
 
-    logger.info("Starting browser flow: %d site(s), %d cycle(s)", len(sites), cycles)
+    # If total_duration_minutes is set, loop indefinitely until time runs out
+    if total_duration_seconds:
+        cycles = 999999  # effectively unlimited; time limit will stop us
+        logger.info("Starting browser flow: %d site(s), running for %d minute(s)", len(sites), total_duration_minutes)
+    else:
+        logger.info("Starting browser flow: %d site(s), %d cycle(s)", len(sites), cycles)
 
     driver = None
     try:
@@ -178,6 +186,9 @@ def run_browser_flow(
             if stop_event and stop_event.is_set():
                 logger.info("Stopped by user before cycle %d.", cycle + 1)
                 return 0
+            if total_duration_seconds and (time.time() - flow_start_time) >= total_duration_seconds:
+                logger.info("Total duration of %d minute(s) reached. Stopping.", total_duration_minutes)
+                break
 
             logger.info("--- Cycle %d/%d at %s ---", cycle + 1, cycles, datetime.now().strftime("%H:%M:%S"))
 
@@ -185,6 +196,9 @@ def run_browser_flow(
                 if stop_event and stop_event.is_set():
                     logger.info("Stopped by user during cycle %d.", cycle + 1)
                     return 0
+                if total_duration_seconds and (time.time() - flow_start_time) >= total_duration_seconds:
+                    logger.info("Total duration of %d minute(s) reached. Stopping.", total_duration_minutes)
+                    break
 
                 url = site.get("url", "")
                 task_name = site.get("task", "")
