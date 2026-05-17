@@ -8,23 +8,46 @@
   "chrome_profile_name": "Default",
   "sites": [
     {
-      "url": "https://www.google.com",
-      "task": "screenshot",
+      "url": "https://www.ilovepdf.com",
+      "task": "browse_and_scroll",
       "params": {
-        "output": "screenshots/google.png"
+        "duration": 180,
+        "scroll_pause": 3.0,
+        "screenshot_dir": "screenshots"
       }
     },
     {
-      "url": "https://www.github.com",
-      "task": "screenshot",
+      "url": "https://www.youtube.com",
+      "task": "browse_and_scroll",
       "params": {
-        "output": "screenshots/github.png"
+        "duration": 180,
+        "scroll_pause": 3.0,
+        "screenshot_dir": "screenshots"
+      }
+    },
+    {
+      "url": "https://www.freeconvert.com",
+      "task": "browse_and_scroll",
+      "params": {
+        "duration": 180,
+        "scroll_pause": 3.0,
+        "screenshot_dir": "screenshots"
+      }
+    },
+    {
+      "url": "https://etoimik.rik.ee",
+      "task": "browse_and_scroll",
+      "params": {
+        "duration": 180,
+        "scroll_pause": 3.0,
+        "screenshot_dir": "screenshots"
       }
     }
   ],
   "repeat": {
-    "enabled": false,
-    "count": 1,
-    "delay_between_cycles": 60
-  }
+    "enabled": true,
+    "count": 5,
+    "delay_between_cycles": 10
+  },
+  "total_duration_minutes": 60
 }
