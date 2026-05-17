@@ -123,6 +123,51 @@ def wait_and_scroll(driver, params: dict) -> None:
         time.sleep(pause)
 
 
+def browse_and_scroll(driver, params: dict) -> None:
+    """Spend a configurable amount of time on a page, scrolling up and down,
+    then take a screenshot before leaving.
+
+    params:
+        duration (int): seconds to spend on the page (default: 180 i.e. 3 minutes).
+        scroll_pause (float): seconds to pause between each scroll action (default: 3.0).
+        screenshot_dir (str): directory to save screenshots (default: "screenshots").
+    """
+    duration = params.get("duration", 180)
+    scroll_pause = params.get("scroll_pause", 3.0)
+    screenshot_dir = params.get("screenshot_dir", "screenshots")
+
+    os.makedirs(screenshot_dir, exist_ok=True)
+
+    start = time.time()
+    scroll_down_flag = True
+
+    while time.time() - start < duration:
+        if scroll_down_flag:
+            driver.execute_script("window.scrollBy(0, 600);")
+        else:
+            driver.execute_script("window.scrollBy(0, -600);")
+
+        time.sleep(scroll_pause)
+
+        # Check if we hit the bottom or top and reverse direction
+        at_bottom = driver.execute_script(
+            "return (window.innerHeight + window.scrollY) >= document.body.scrollHeight;"
+        )
+        at_top = driver.execute_script("return window.scrollY === 0;")
+
+        if at_bottom:
+            scroll_down_flag = False
+        elif at_top:
+            scroll_down_flag = True
+
+    # Take a screenshot at the end
+    page_title = driver.title or "page"
+    safe_name = "".join(c if c.isalnum() or c in "-_ " else "_" for c in page_title)[:50]
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filepath = os.path.join(screenshot_dir, f"{safe_name}_{timestamp}.png")
+    driver.save_screenshot(filepath)
+
+
 def navigate_back(driver, params: dict) -> None:
     """Navigate back in browser history."""
     driver.back()
