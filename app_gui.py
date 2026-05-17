@@ -11,7 +11,7 @@ import work_flow  # assumes work_flow.py is next to this file
 
 
 class App(tk.Tk):
-    VERSION = "1.1.0"
+    VERSION = "1.1.2"
     def __init__(self):
         super().__init__()
         self.title(f"Work Keeper v{self.VERSION}")
@@ -222,7 +222,11 @@ class App(tk.Tk):
             except Exception as e:
                 import traceback
                 self._bf_append(f"ERROR: {e}")
-                self._bf_append(traceback.format_exc())
+                # Log to a file as well for debugging
+                with open("error_debug.log", "a") as f:
+                    f.write(f"\n--- {datetime.now()} ---\n")
+                    f.write(traceback.format_exc())
+                self._bf_append("Detailed traceback saved to error_debug.log")
             self.after(0, self._bf_on_done)
 
         self.bf_worker = threading.Thread(target=target, daemon=True)
