@@ -146,6 +146,8 @@ WorkKeeper now includes a **Browser Flow** feature that opens a list of URLs in 
 
 ### Quick start (Browser Flow)
 
+**Note for macOS Users:** You may need to grant "Screen Recording" and "Accessibility" permissions to your terminal or IDE if you encounter issues with browser automation or screenshots.
+
 1) Install the new dependencies:
    `pip install -r requirements.txt`
 
@@ -199,6 +201,7 @@ Config fields:
 - **chrome_profile_path**: path to a Chrome user data directory to reuse logins (leave empty for a fresh profile). Windows example: `C:/Users/YourName/AppData/Local/Google/Chrome/User Data`
 - **chrome_profile_name**: profile folder name inside the user data dir (default: `Default`)
 - **repeat**: enable cycling through the URL list multiple times with a delay between cycles
+- **total_duration_minutes**: stop the entire flow after this many minutes regardless of cycle count (optional)
 
 ### Available browser tasks (defined in browser_tasks.py)
 
@@ -210,6 +213,7 @@ Config fields:
 | click_element    | Click an element by CSS selector                 | selector, timeout                             |
 | fill_form        | Fill multiple form fields and optionally submit  | fields (selector→value map), submit_selector  |
 | wait_and_scroll  | Scroll to page bottom (for lazy-loaded content)  | pause, scrolls                                |
+| browse_and_scroll| Randomly browse and scroll for a set duration    | duration, scroll_pause, screenshot_dir        |
 | navigate_back    | Go back in browser history                       | —                                             |
 | refresh_page     | Refresh the current page                         | —                                             |
 | run_javascript   | Execute custom JavaScript                        | script                                        |
@@ -223,6 +227,7 @@ You can add your own tasks by defining a function in `browser_tasks.py` with the
 - `python browser_flow.py --config urls_config.json` — run with a config file
 - `python browser_flow.py --headless` — force headless mode (overrides config)
 - `python browser_flow.py --log-file browser.log` — enable file logging with rotation
+- `python browser_flow.py --total-duration 60` — force total duration in minutes (overrides config)
 
 ### Chrome profile tip (Windows)
 

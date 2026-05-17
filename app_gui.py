@@ -11,9 +11,10 @@ import work_flow  # assumes work_flow.py is next to this file
 
 
 class App(tk.Tk):
+    VERSION = "1.1.0"
     def __init__(self):
         super().__init__()
-        self.title("Work Keeper")
+        self.title(f"Work Keeper v{self.VERSION}")
         self.geometry("600x520")
         self.resizable(False, False)
 
