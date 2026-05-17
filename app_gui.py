@@ -220,7 +220,9 @@ class App(tk.Tk):
             except ImportError:
                 self._bf_append("ERROR: browser_flow module not found. Install selenium & webdriver-manager.")
             except Exception as e:
+                import traceback
                 self._bf_append(f"ERROR: {e}")
+                self._bf_append(traceback.format_exc())
             self.after(0, self._bf_on_done)
 
         self.bf_worker = threading.Thread(target=target, daemon=True)

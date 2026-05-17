@@ -67,8 +67,12 @@ def setup_logging(log_file: Optional[str] = None, level: int = logging.INFO) -> 
 
 def load_config(path: str) -> dict:
     """Load and return the JSON config file."""
-    with open(path, "r", encoding="utf-8") as f:
-        return json.load(f)
+    try:
+        with open(path, "r", encoding="utf-8-sig") as f:
+            return json.load(f)
+    except UnicodeDecodeError:
+        with open(path, "r", encoding="latin-1") as f:
+            return json.load(f)
 
 
 # ---------------------------------------------------------------------------
@@ -183,7 +187,13 @@ def run_browser_flow(
 
     try:
         config = load_config(config_path)
-    except (FileNotFoundError, json.JSONDecodeError) as e:
+    except FileNotFoundError:
+        logger.error("Config file not found: '%s'", config_path)
+        return 1
+    except json.JSONDecodeError as e:
+        logger.error("Invalid JSON in config file: %s", e)
+        return 1
+    except Exception as e:
         logger.error("Failed to load config '%s': %s", config_path, e)
         return 1
 
