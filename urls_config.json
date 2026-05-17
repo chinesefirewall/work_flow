@@ -1,0 +1,53 @@
+{
+  "browser": "chrome",
+  "headless": false,
+  "delay_between_sites": 5,
+  "page_load_wait": 3,
+  "max_retries": 2,
+  "chrome_profile_path": "",
+  "chrome_profile_name": "Default",
+  "sites": [
+    {
+      "url": "https://www.ilovepdf.com",
+      "task": "browse_and_scroll",
+      "params": {
+        "duration": 180,
+        "scroll_pause": 3.0,
+        "screenshot_dir": "screenshots"
+      }
+    },
+    {
+      "url": "https://www.youtube.com",
+      "task": "browse_and_scroll",
+      "params": {
+        "duration": 180,
+        "scroll_pause": 3.0,
+        "screenshot_dir": "screenshots"
+      }
+    },
+    {
+      "url": "https://www.freeconvert.com",
+      "task": "browse_and_scroll",
+      "params": {
+        "duration": 180,
+        "scroll_pause": 3.0,
+        "screenshot_dir": "screenshots"
+      }
+    },
+    {
+      "url": "https://etoimik.rik.ee",
+      "task": "browse_and_scroll",
+      "params": {
+        "duration": 180,
+        "scroll_pause": 3.0,
+        "screenshot_dir": "screenshots"
+      }
+    }
+  ],
+  "repeat": {
+    "enabled": true,
+    "count": 5,
+    "delay_between_cycles": 10
+  },
+  "total_duration_minutes": 60
+}
