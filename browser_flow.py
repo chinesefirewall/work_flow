@@ -105,7 +105,7 @@ def create_driver(config: dict, headless_override: Optional[bool] = None) -> web
 # Task execution with retry
 # ---------------------------------------------------------------------------
 
-def execute_task(driver, task_name: str, params: dict, max_retries: int = 1) -> bool:
+def execute_task(driver, task_name: str, params: dict, max_retries: int = 1, stop_event: Optional[threading.Event] = None, screenshot_dir_override: Optional[str] = None) -> bool:
     """Look up and execute a task function from browser_tasks with optional retry.
 
     Returns True on success, False on failure.
@@ -115,11 +115,34 @@ def execute_task(driver, task_name: str, params: dict, max_retries: int = 1) -> 
         logger.warning("Unknown task: '%s' — skipping", task_name)
         return False
 
+    # Inject screenshot_dir_override if provided
+    if screenshot_dir_override:
+        if task_name == "screenshot":
+            # If 'output' is provided, we might want to change its directory
+            # or if it's not provided, we use the override as the base.
+            output = params.get("output")
+            if output:
+                filename = os.path.basename(output)
+                params["output"] = os.path.join(screenshot_dir_override, filename)
+            else:
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                params["output"] = os.path.join(screenshot_dir_override, f"screenshot_{timestamp}.png")
+        elif task_name == "browse_and_scroll":
+            params["screenshot_dir"] = screenshot_dir_override
+
     attempt = 0
     while attempt < max_retries:
+        if stop_event and stop_event.is_set():
+            return False
         attempt += 1
         try:
-            task_fn(driver, params)
+            # Pass stop_event to tasks if they support it
+            import inspect
+            sig = inspect.signature(task_fn)
+            if "stop_event" in sig.parameters:
+                task_fn(driver, params, stop_event=stop_event)
+            else:
+                task_fn(driver, params)
             return True
         except Exception as e:
             wait = min(2 ** attempt, 30)  # exponential backoff capped at 30s
@@ -128,7 +151,13 @@ def execute_task(driver, task_name: str, params: dict, max_retries: int = 1) -> 
                     "Task '%s' failed (attempt %d/%d): %s — retrying in %ds",
                     task_name, attempt, max_retries, e, wait,
                 )
-                time.sleep(wait)
+                # Sleep in small increments for stop_event
+                waited = 0
+                while waited < wait:
+                    if stop_event and stop_event.is_set():
+                        return False
+                    time.sleep(min(0.5, wait - waited))
+                    waited += 0.5
             else:
                 logger.error("Task '%s' failed after %d attempt(s): %s", task_name, max_retries, e)
     return False
@@ -143,6 +172,8 @@ def run_browser_flow(
     headless_override: Optional[bool] = None,
     log_file: Optional[str] = None,
     stop_event: Optional[threading.Event] = None,
+    screenshot_dir_override: Optional[str] = None,
+    total_duration_override: Optional[int] = None,
 ) -> int:
     """Run the full browser automation flow.
 
@@ -163,7 +194,8 @@ def run_browser_flow(
     cycles = repeat.get("count", 1) if repeat.get("enabled", False) else 1
     cycle_delay = repeat.get("delay_between_cycles", 60)
     sites = config.get("sites", [])
-    total_duration_minutes = config.get("total_duration_minutes", 0)
+    
+    total_duration_minutes = total_duration_override if total_duration_override is not None else config.get("total_duration_minutes", 0)
     total_duration_seconds = total_duration_minutes * 60 if total_duration_minutes else 0
     flow_start_time = time.time()
 
@@ -207,31 +239,53 @@ def run_browser_flow(
                 logger.info("[%d/%d] Opening: %s", idx, len(sites), url)
                 try:
                     driver.get(url)
-                    time.sleep(page_load_wait)
+                    # Sleep in small increments for stop_event
+                    waited = 0
+                    while waited < page_load_wait:
+                        if stop_event and stop_event.is_set():
+                            logger.info("Stopped by user during page load wait.")
+                            return 0
+                        time.sleep(min(0.5, page_load_wait - waited))
+                        waited += 0.5
                 except Exception as e:
                     logger.error("[%d/%d] Failed to open %s: %s", idx, len(sites), url, e)
                     continue
 
                 if task_name:
-                    ok = execute_task(driver, task_name, params, max_retries=max_retries)
+                    ok = execute_task(
+                        driver, 
+                        task_name, 
+                        params, 
+                        max_retries=max_retries, 
+                        stop_event=stop_event, 
+                        screenshot_dir_override=screenshot_dir_override
+                    )
                     status = "completed" if ok else "FAILED"
                     logger.info("[%d/%d] Task '%s' %s", idx, len(sites), task_name, status)
                 else:
                     logger.info("[%d/%d] No task configured — page opened only", idx, len(sites))
 
                 if idx < len(sites):
-                    time.sleep(delay)
+                    # Sleep in small increments for stop_event
+                    waited = 0
+                    while waited < delay:
+                        if stop_event and stop_event.is_set():
+                            logger.info("Stopped by user during delay between sites.")
+                            return 0
+                        time.sleep(min(0.5, delay - waited))
+                        waited += 0.5
 
-            if cycle < cycles - 1:
-                logger.info("Waiting %ds before next cycle...", cycle_delay)
-                # Sleep in small increments so we can respond to stop_event
-                waited = 0
-                while waited < cycle_delay:
-                    if stop_event and stop_event.is_set():
-                        logger.info("Stopped by user between cycles.")
-                        return 0
-                    time.sleep(min(1, cycle_delay - waited))
-                    waited += 1
+                if cycle < cycles - 1:
+                    logger.info("Waiting %ds before next cycle...", cycle_delay)
+                    # Sleep in small increments so we can respond to stop_event
+                    waited = 0.0
+                    while waited < cycle_delay:
+                        if stop_event and stop_event.is_set():
+                            logger.info("Stopped by user between cycles.")
+                            return 0
+                        sleep_step = min(0.5, cycle_delay - waited)
+                        time.sleep(sleep_step)
+                        waited += sleep_step
 
         logger.info("Browser flow completed successfully.")
         return 0
@@ -268,13 +322,29 @@ def parse_args(argv=None) -> argparse.Namespace:
         "--log-file", default=None,
         help="Path to a log file (enables file logging with rotation)",
     )
+    parser.add_argument(
+        "--screenshot-dir", default=None,
+        help="Optional override for the directory where screenshots are saved",
+    )
+    parser.add_argument(
+        "--total-duration", type=int, default=None,
+        help="Force total duration in minutes (overrides config setting)",
+    )
     return parser.parse_args(argv)
 
 
 if __name__ == "__main__":
     args = parse_args()
+    # Command-line overrides for config settings
+    if args.total_duration:
+        # We need to load config first or pass it to run_browser_flow differently
+        # Actually run_browser_flow loads it.
+        pass
+
     sys.exit(run_browser_flow(
         config_path=args.config,
         headless_override=args.headless,
         log_file=args.log_file,
+        screenshot_dir_override=args.screenshot_dir,
+        total_duration_override=args.total_duration
     ))

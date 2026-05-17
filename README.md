@@ -227,6 +227,7 @@ You can add your own tasks by defining a function in `browser_tasks.py` with the
 - `python browser_flow.py --config urls_config.json` — run with a config file
 - `python browser_flow.py --headless` — force headless mode (overrides config)
 - `python browser_flow.py --log-file browser.log` — enable file logging with rotation
+- `python browser_flow.py --screenshot-dir C:/MyScreenshots` — override screenshot directory
 - `python browser_flow.py --total-duration 60` — force total duration in minutes (overrides config)
 
 ### Chrome profile tip (Windows)

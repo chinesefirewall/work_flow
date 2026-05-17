@@ -15,6 +15,8 @@ import os
 import time
 from datetime import datetime
 
+from typing import Optional
+
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
@@ -109,7 +111,7 @@ def fill_form(driver, params: dict) -> None:
         btn.click()
 
 
-def wait_and_scroll(driver, params: dict) -> None:
+def wait_and_scroll(driver, params: dict, stop_event: Optional[threading.Event] = None) -> None:
     """Scroll to the bottom of the page (useful for lazy-loaded content).
 
     params:
@@ -119,11 +121,19 @@ def wait_and_scroll(driver, params: dict) -> None:
     pause = params.get("pause", 1.0)
     scrolls = params.get("scrolls", 1)
     for _ in range(scrolls):
+        if stop_event and stop_event.is_set():
+            break
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-        time.sleep(pause)
+        # Sleep in small increments for stop_event
+        waited = 0
+        while waited < pause:
+            if stop_event and stop_event.is_set():
+                return
+            time.sleep(min(0.2, pause - waited))
+            waited += 0.2
 
 
-def browse_and_scroll(driver, params: dict) -> None:
+def browse_and_scroll(driver, params: dict, stop_event: Optional[threading.Event] = None) -> None:
     """Spend a configurable amount of time on a page, scrolling up and down,
     then take a screenshot before leaving.
 
@@ -142,12 +152,21 @@ def browse_and_scroll(driver, params: dict) -> None:
     scroll_down_flag = True
 
     while time.time() - start < duration:
+        if stop_event and stop_event.is_set():
+            return
+
         if scroll_down_flag:
             driver.execute_script("window.scrollBy(0, 600);")
         else:
             driver.execute_script("window.scrollBy(0, -600);")
 
-        time.sleep(scroll_pause)
+        # Sleep in small increments for stop_event
+        waited = 0
+        while waited < scroll_pause:
+            if stop_event and stop_event.is_set():
+                return
+            time.sleep(min(0.5, scroll_pause - waited))
+            waited += 0.5
 
         # Check if we hit the bottom or top and reverse direction
         at_bottom = driver.execute_script(

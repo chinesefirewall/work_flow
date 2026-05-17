@@ -138,6 +138,7 @@ class App(tk.Tk):
     # ------------------------------------------------------------------ #
     def _build_browser_tab(self, frm):
         self.bf_config_path = tk.StringVar(value="urls_config.json")
+        self.bf_screenshot_dir = tk.StringVar(value="")
         self.bf_headless = tk.BooleanVar(value=False)
         self.bf_worker = None
         self.bf_stop_event = threading.Event()
@@ -150,6 +151,14 @@ class App(tk.Tk):
         cfg_frame.grid(row=row, column=1, sticky="ew", pady=3)
         ttk.Entry(cfg_frame, textvariable=self.bf_config_path, width=32).pack(side="left", fill="x", expand=True)
         ttk.Button(cfg_frame, text="Browse...", command=self._browse_config).pack(side="left", padx=4)
+        row += 1
+
+        # Screenshot dir picker
+        ttk.Label(frm, text="Screenshot Folder:").grid(row=row, column=0, sticky="w", pady=3)
+        ss_frame = ttk.Frame(frm)
+        ss_frame.grid(row=row, column=1, sticky="ew", pady=3)
+        ttk.Entry(ss_frame, textvariable=self.bf_screenshot_dir, width=32).pack(side="left", fill="x", expand=True)
+        ttk.Button(ss_frame, text="Browse...", command=self._browse_screenshot_dir).pack(side="left", padx=4)
         row += 1
 
         # Headless checkbox
@@ -182,6 +191,11 @@ class App(tk.Tk):
         if path:
             self.bf_config_path.set(path)
 
+    def _browse_screenshot_dir(self):
+        path = filedialog.askdirectory(title="Select Screenshot Directory")
+        if path:
+            self.bf_screenshot_dir.set(path)
+
     def _bf_start(self):
         config_path = self.bf_config_path.get().strip()
         if not config_path or not os.path.isfile(config_path):
@@ -200,6 +214,7 @@ class App(tk.Tk):
                     config_path=config_path,
                     headless_override=self.bf_headless.get() or None,
                     stop_event=self.bf_stop_event,
+                    screenshot_dir_override=self.bf_screenshot_dir.get().strip() or None,
                 )
                 self._bf_append(f"Finished with code {rc} at {datetime.now().strftime('%H:%M:%S')}")
             except ImportError:
