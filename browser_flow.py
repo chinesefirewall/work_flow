@@ -188,14 +188,17 @@ def run_browser_flow(
     try:
         config = load_config(config_path)
     except FileNotFoundError:
-        logger.error("Config file not found: '%s'", config_path)
-        return 1
+        msg = f"Config file not found: '{config_path}'"
+        logger.error(msg)
+        raise FileNotFoundError(msg)
     except json.JSONDecodeError as e:
-        logger.error("Invalid JSON in config file: %s", e)
-        return 1
+        msg = f"Invalid JSON in config file: {e}"
+        logger.error(msg)
+        raise ValueError(msg)
     except Exception as e:
-        logger.error("Failed to load config '%s': %s", config_path, e)
-        return 1
+        msg = f"Failed to load config '{config_path}': {e}"
+        logger.error(msg)
+        raise RuntimeError(msg)
 
     delay = config.get("delay_between_sites", 5)
     page_load_wait = config.get("page_load_wait", 3)

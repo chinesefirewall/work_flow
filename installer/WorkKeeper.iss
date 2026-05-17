@@ -3,7 +3,7 @@
 ; Build on Windows (locally or in CI). Requires: Inno Setup 6+
 
 #define MyAppName       "WorkKeeper"
-#define MyAppVersion    "1.1.0"
+#define MyAppVersion    "1.1.2"
 #define MyAppPublisher  "Niyi Adebayo"
 #define MyAppURL        "https://github.com/chinesefirewall/work_flow"
 #define MyExeName       "WorkKeeper.exe"
